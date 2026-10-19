@@ -1,0 +1,42 @@
+# FILES
+*.VC.db
+*.VC.opendb
+*.sdf
+*.pdb
+*.dll
+*.exe
+*.ilk
+*.opensdf
+*.idb
+*.suo
+*.dylib
+*.sln
+*.slnx
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+imgui.ini
+*.txt
+cmake_install.cmake
+Config.h
+FOCAL_ENGINE_Version.h
+report.xml
+
+# Engine libraries that editor copies to project root, plugin links libraries from EngineLibs/ instead.
+/FocalEngine.lib
+/FEBasicApplication.lib
+
+# Prebuilt third party DLLs are needed to run plugin from fresh clone.
+!ThirdParty/**/*.dll
+
+#Folders
+# Build folders are anchored to root, otherwise ThirdParty/*/Debug/ and ThirdParty/*/Release/ would be ignored too.
+/Debug/
+/Release/
+/x64/
+*.dir/
+.vs/
+CMakeFiles/
+Build/
+EngineBuild/
+EngineLibs/

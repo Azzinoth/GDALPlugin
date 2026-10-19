@@ -1,0 +1,17 @@
+{
+	"ID": "e3e1ca54-6794-41c2-bbe0-85f68f6dc76c",
+	"Name": "GDALPlugin",
+	"Version": "1.0.0",
+	"SupportedOS": [ "Windows" ],
+	"Dependencies": [],
+	"Modules": [
+		{
+			"ID": "fb609eb2-034f-4eff-8cb9-4a3a8e102399",
+			"Type": "Engine",
+			"Name": "GDALPlugin",
+			"EntryPointFileName": "GDALPlugin.dll",
+			"SupportedOS": [ "Windows" ],
+			"Dependencies": []
+		}
+	]
+}

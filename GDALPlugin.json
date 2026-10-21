@@ -2,6 +2,7 @@
 	"ID": "e3e1ca54-6794-41c2-bbe0-85f68f6dc76c",
 	"Name": "GDALPlugin",
 	"Version": "1.0.0",
+	"Description": "Wrapper for GDAL library.",
 	"SupportedOS": [ "Windows" ],
 	"Dependencies": [],
 	"Modules": [

@@ -130,6 +130,8 @@ target_link_libraries(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE ${FOCAL_ENGINE_INCLUDES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE FOCAL_ENGINE_HEADERS_ONLY)
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:FE_DEBUG_ENABLED>)
+
 source_group("Source Files/" FILES ${Main_SRC})
 source_group("Source Files/Engine/" FILES ${Connection_To_Engine_SRC})
 

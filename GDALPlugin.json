@@ -12,6 +12,7 @@
 			"Name": "GDALPlugin",
 			"EntryPointFileName": "GDALPlugin.dll",
 			"SupportedOS": [ "Windows" ],
+			"SupportedGraphicsModes": [ "OnScreen", "Offscreen", "None" ],
 			"Dependencies": []
 		}
 	]

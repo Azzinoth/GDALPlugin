@@ -279,11 +279,11 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 # Applications that generate plugin project could add more modules here, for example editor adds editor module.
 include(${CMAKE_CURRENT_SOURCE_DIR}/AdditionalModules.cmake OPTIONAL)
 
-# Games link GDAL through its import library, GDAL DLLs from Build/Release are copied next to game executable.
+# Games link Release import library of GDAL and delay load gdal.dll, so they start without GDAL DLLs, plugin loads them from Build/Release in OnLoad.
 set(GDAL_RELEASE_IMPORT_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GDAL/Lib/x64/Release/gdal.lib")
 # fe_write_static_link_file treats missing file as a system library name, so it would fail only when game is linked.
 if(NOT EXISTS "${GDAL_RELEASE_IMPORT_LIBRARY}")
     message(FATAL_ERROR "${GDAL_RELEASE_IMPORT_LIBRARY} is not found")
 endif()
 
-fe_write_static_link_file(LIBRARIES ${GDAL_RELEASE_IMPORT_LIBRARY})
+fe_write_static_link_file(LIBRARIES ${GDAL_RELEASE_IMPORT_LIBRARY} delayimp LINK_OPTIONS "/DELAYLOAD:gdal.dll")

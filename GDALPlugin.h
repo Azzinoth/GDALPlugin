@@ -25,7 +25,7 @@ class GDALPlugin : public FEPluginCore, public GDALPluginInterface
 	static void ReadPoints(const OGRSimpleCurve* Curve, std::vector<VectorPoint>& OutPoints);
 	static void AddToBounds(const VectorFeature& Feature, VectorLayer& Layer);
 public:
-	void OnLoad() override;
+	bool OnLoad() override;
 	void OnUnload() override;
 	void OnUpdate(double DeltaTime) override;
 

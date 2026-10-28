@@ -23,13 +23,14 @@ bool GDALPlugin::LoadGDAL()
 #endif
 }
 
-void GDALPlugin::OnLoad()
+bool GDALPlugin::OnLoad()
 {
 	bGDALLoaded = LoadGDAL();
 	if (!bGDALLoaded)
 	{
+		// Plugin stays loaded, its functions fail while GDAL is not loaded.
 		LOG.Add("GDALPlugin::OnLoad: Loading GDAL DLL failed, GeoTIFF and vector files are not supported", "GDAL_PLUGIN", FE_LOG_ERROR);
-		return;
+		return true;
 	}
 
 	GDALAllRegister();
@@ -38,7 +39,7 @@ void GDALPlugin::OnLoad()
 	if (DriverCount == 0)
 	{
 		LOG.Add("GDALPlugin::OnLoad: GDAL did not register any drivers", "GDAL_PLUGIN", FE_LOG_ERROR);
-		return;
+		return true;
 	}
 
 	LOG.Add("GDALPlugin::OnLoad: " + std::string(GDALVersionInfo("--version")) + " loaded, " + std::to_string(DriverCount) + " drivers registered", "GDAL_PLUGIN");
@@ -52,6 +53,8 @@ void GDALPlugin::OnLoad()
 
 	if (CPLGetLastErrorType() != CE_None)
 		LOG.Add("GDALPlugin::OnLoad: GDAL reported: " + std::string(CPLGetLastErrorMsg()), "GDAL_PLUGIN", FE_LOG_WARNING);
+
+	return true;
 }
 
 void GDALPlugin::OnUnload()

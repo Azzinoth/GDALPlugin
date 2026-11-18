@@ -367,3 +367,128 @@ void GDALPlugin::AddToBounds(const VectorFeature& Feature, VectorLayer& Layer)
 	for (size_t i = 0; i < Feature.Polygons.size(); i++)
 		AddPoints(Feature.Polygons[i].ExteriorRing);
 }
+
+bool GDALPlugin::ReadFloat32Array(const std::string& FilePath, const std::string& ArrayName,
+								  const std::vector<uint64_t>& Start, const std::vector<uint64_t>& Count, std::vector<float>& Result)
+{
+	Result.clear();
+	if (!bGDALLoaded)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: GDAL is not loaded", "GDAL_PLUGIN", FE_LOG_ERROR);
+		return false;
+	}
+
+	if (FilePath.empty() || ArrayName.empty())
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: Invalid arguments", "GDAL_PLUGIN", FE_LOG_ERROR);
+		return false;
+	}
+
+	// Only GDAL C API is used here, static library uses Release GDAL also in Debug, where std::string and std::vector of GDAL C++ API have other layout.
+	GDALDatasetH Dataset = GDALOpenEx(FilePath.c_str(), GDAL_OF_MULTIDIM_RASTER | GDAL_OF_VERBOSE_ERROR, nullptr, nullptr, nullptr);
+	if (Dataset == nullptr)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: Failed to open \"" + FilePath + "\": " + std::string(CPLGetLastErrorMsg()), "GDAL_PLUGIN", FE_LOG_ERROR);
+		return false;
+	}
+
+	bool bResult = false;
+	GDALGroupH RootGroup = GDALDatasetGetRootGroup(Dataset);
+	if (RootGroup == nullptr)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: \"" + FilePath + "\" has no root group", "GDAL_PLUGIN", FE_LOG_ERROR);
+	}
+	else
+	{
+		GDALMDArrayH Array = ArrayName[0] == '/' ? GDALGroupOpenMDArrayFromFullname(RootGroup, ArrayName.c_str(), nullptr) : GDALGroupOpenMDArray(RootGroup, ArrayName.c_str(), nullptr);
+		if (Array == nullptr)
+		{
+			LOG.Add("GDALPlugin::ReadFloat32Array: Array \"" + ArrayName + "\" is not found in \"" + FilePath + "\"", "GDAL_PLUGIN", FE_LOG_ERROR);
+		}
+		else
+		{
+			bResult = ReadFloat32ArrayValues(Array, FilePath, ArrayName, Start, Count, Result);
+			GDALMDArrayRelease(Array);
+		}
+
+		GDALGroupRelease(RootGroup);
+	}
+
+	GDALClose(Dataset);
+	return bResult;
+}
+
+bool GDALPlugin::ReadFloat32ArrayValues(GDALMDArrayH Array, const std::string& FilePath, const std::string& ArrayName,
+										const std::vector<uint64_t>& Start, const std::vector<uint64_t>& Count, std::vector<float>& Result)
+{
+	GDALExtendedDataTypeH DataType = GDALMDArrayGetDataType(Array);
+	const bool bNumeric = DataType != nullptr && GDALExtendedDataTypeGetClass(DataType) == GEDTC_NUMERIC;
+	if (DataType != nullptr)
+		GDALExtendedDataTypeRelease(DataType);
+
+	if (!bNumeric)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: Array \"" + ArrayName + "\" is not numeric", "GDAL_PLUGIN", FE_LOG_ERROR);
+		return false;
+	}
+
+	size_t DimensionCount = 0;
+	GDALDimensionH* Dimensions = GDALMDArrayGetDimensions(Array, &DimensionCount);
+	std::vector<GUInt64> DimensionSizes(DimensionCount);
+	for (size_t i = 0; i < DimensionCount; i++)
+		DimensionSizes[i] = GDALDimensionGetSize(Dimensions[i]);
+
+	if (Dimensions != nullptr)
+		GDALReleaseDimensions(Dimensions, DimensionCount);
+
+	std::vector<GUInt64> ArrayStart(Start.begin(), Start.end());
+	std::vector<size_t> ArrayCount(Count.begin(), Count.end());
+	if (ArrayStart.empty() && ArrayCount.empty())
+	{
+		ArrayStart.resize(DimensionCount, 0);
+		for (size_t i = 0; i < DimensionCount; i++)
+			ArrayCount.push_back(static_cast<size_t>(DimensionSizes[i]));
+	}
+
+	if (ArrayStart.size() != DimensionCount || ArrayCount.size() != DimensionCount)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: Array \"" + ArrayName + "\" has " + std::to_string(DimensionCount) + " dimensions, Start and Count should have one value per dimension", "GDAL_PLUGIN", FE_LOG_ERROR);
+		return false;
+	}
+
+	size_t ValueCount = 1;
+	for (size_t i = 0; i < DimensionCount; i++)
+	{
+		const GUInt64 DimensionSize = DimensionSizes[i];
+		if (ArrayCount[i] == 0 || ArrayStart[i] >= DimensionSize || ArrayCount[i] > DimensionSize - ArrayStart[i])
+		{
+			LOG.Add("GDALPlugin::ReadFloat32Array: Start and Count are outside of dimension " + std::to_string(i) + " of array \"" + ArrayName + "\", its size is " + std::to_string(DimensionSize), "GDAL_PLUGIN", FE_LOG_ERROR);
+			return false;
+		}
+
+		ValueCount *= ArrayCount[i];
+	}
+
+	// Exceptions should not leave the plugin, application could be built with other C runtime.
+	try
+	{
+		Result.resize(ValueCount);
+	}
+	catch (const std::exception&)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: Not enough memory for " + std::to_string(ValueCount) + " values of array \"" + ArrayName + "\"", "GDAL_PLUGIN", FE_LOG_ERROR);
+		return false;
+	}
+
+	GDALExtendedDataTypeH BufferDataType = GDALExtendedDataTypeCreate(GDT_Float32);
+	const bool bRead = GDALMDArrayRead(Array, ArrayStart.data(), ArrayCount.data(), nullptr, nullptr, BufferDataType, Result.data(), nullptr, 0) != 0;
+	GDALExtendedDataTypeRelease(BufferDataType);
+	if (!bRead)
+	{
+		LOG.Add("GDALPlugin::ReadFloat32Array: Failed to read array \"" + ArrayName + "\" of \"" + FilePath + "\": " + std::string(CPLGetLastErrorMsg()), "GDAL_PLUGIN", FE_LOG_ERROR);
+		Result.clear();
+		return false;
+	}
+
+	return true;
+}

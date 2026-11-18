@@ -24,6 +24,9 @@ class GDALPlugin : public FEPluginCore, public GDALPluginInterface
 	static void ReadPolygon(const OGRPolygon* Polygon, VectorPolygon& OutPolygon);
 	static void ReadPoints(const OGRSimpleCurve* Curve, std::vector<VectorPoint>& OutPoints);
 	static void AddToBounds(const VectorFeature& Feature, VectorLayer& Layer);
+
+	static bool ReadFloat32ArrayValues(GDALMDArrayH Array, const std::string& FilePath, const std::string& ArrayName,
+									   const std::vector<uint64_t>& Start, const std::vector<uint64_t>& Count, std::vector<float>& Result);
 public:
 	bool OnLoad() override;
 	void OnUnload() override;
@@ -33,4 +36,7 @@ public:
 	bool SaveByteGeoTIFF(const std::string& FilePath, int Width, int Height, int BandCount, const uint8_t* Data, const GeoTIFFSettings& Settings) override;
 
 	const VectorFileData* ReadVectorFile(const std::string& FilePath) override;
+
+	bool ReadFloat32Array(const std::string& FilePath, const std::string& ArrayName,
+						  const std::vector<uint64_t>& Start, const std::vector<uint64_t>& Count, std::vector<float>& Result) override;
 };

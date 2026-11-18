@@ -17,7 +17,7 @@ public:
 	static constexpr const char* PluginID = "e3e1ca54-6794-41c2-bbe0-85f68f6dc76c";
 
 	// Increase when anything in this file changes.
-	static constexpr int InterfaceVersion = 1;
+	static constexpr int InterfaceVersion = 2;
 
 	struct GeoTIFFSettings
 	{
@@ -146,4 +146,12 @@ public:
 	// Reads all layers of vector file in any format that GDAL supports, for example shapefile.
 	// Returned data is owned by plugin and is valid until next read, nullptr if file could not be read.
 	virtual const VectorFileData* ReadVectorFile(const std::string& FilePath) = 0;
+
+	// Reads part of a numeric array of a multidimensional file, for example NetCDF or HDF5, converted to float.
+	// FilePath could be a local file or "/vsicurl/https://..." for HDF5 based files, NetCDF-4 is HDF5 based.
+	// ArrayName is the name in the root group or the full name like "/group/array".
+	// Start and Count have one value per dimension, empty Start and Count read the whole array.
+	// Result is in row major order, the last dimension changes fastest, missing values stay as they are stored in the file.
+	virtual bool ReadFloat32Array(const std::string& FilePath, const std::string& ArrayName,
+								  const std::vector<uint64_t>& Start, const std::vector<uint64_t>& Count, std::vector<float>& Result) = 0;
 };
